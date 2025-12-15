@@ -15,20 +15,12 @@ namespace StudentService.Services
 
         public async Task<Student> RegisterStudentAsync(Student student)
         {
-            Console.WriteLine($"Attempting to register student with email: {student.Email}");
             var existingStudent = await _studentRepository.GetStudentByEmailAsync(student.Email);
             if (existingStudent != null)
             {
                 throw new Exception("Email already registered");
             }
-
-            // Example: hash password (simplified)
-            student.PasswordHash = Convert.ToBase64String(
-                System.Text.Encoding.UTF8.GetBytes(student.PasswordHash)
-            );
-
             student.CreatedAt = DateTime.UtcNow;
-            Console.WriteLine($"Registering student: {student.Email} at {student.CreatedAt}");
             return await _studentRepository.CreateStudentAsync(student);
         }
 
@@ -41,5 +33,19 @@ namespace StudentService.Services
         {
             return _studentRepository.GetStudentByIdAsync(id);
         }
+
+        public async Task<Student?> LoginAsync(string email, string password)
+        {
+            var student = await _studentRepository.GetStudentByEmailAsync(email);
+            if (student == null) return null;
+
+
+
+            if (student.PasswordHash != password)
+                return null;
+
+            return student;
+        }
+
     }
 }
