@@ -1,0 +1,194 @@
+# Project Overview
+This project is a microservices-based application built using ASP.NET Core Web API.
+Each microservice is responsible for a specific business capability and exposes
+REST endpoints that communicate using JSON.
+
+The project is developed step by step to understand microservice architecture,
+service boundaries, and best practices.
+
+## What is a Microservice ?
+A microservice is:
+
+	A small, independent application that does one job, runs on its own,
+	and communicates with other services using HTTP (APIs).
+
+Instead of one big application, you build many small ones.
+
+## Monolith vs Microservices (very important)
+Monolithic application :
+	One project
+	One database
+	One deployment
+	Everything tightly connected
+If one part breaks → whole app can fail
+
+Microservices architecture
+	Many small projects (services)
+	Each service:	
+	Has one responsibility
+	Can be deployed independently	
+	Can fail without killing everything
+	Communicate via APIs (HTTP/REST)
+## Why use microservices?
+### Separation of responsibilities
+	Each service does one thing well.
+	This makes the code:
+		cleaner 
+		easier to understand
+		easier to maintain
+### Scalability 
+	If orders increase:
+	Scale only Order Service
+	Not the whole system
+	or add more functionality to one service without affecting others.
+### Technology flexibility (later concept)
+	Different services can use:
+	Different databases (much better )
+	Different technologies (later)
+### Independent deployment
+	Update one service without redeploying the entire application.
+	Reduces downtime and risk.
+	example: Fix a bug in Payment Service and deploy it without touching Order or User Services or deploying the whole app.
+## When NOT to use microservices  ? 
+	Project is very small
+	No real need for scaling
+	the owner is not ready to pay the complexity cost
+## needed to build microservices (high level)
+Building microservices requires designing small, independent services with clear
+responsibilities. Each service runs separately, owns its own data, and
+communicates with other services through HTTP-based APIs using JSON.
+
+## What we haven’t covered yet (but will, later)
+	How services communicate in detail (sync vs async, events, queues)
+	Authentication & authorization between services
+	API Gateway (optional, when multiple services exist)
+	Database design per service
+	Deployment strategies (containers, CI/CD, scaling)
+	Error handling, logging, monitoring, tracing
+## How to design a microservice
+	ask urself  : What is one thing this service should do by itself?
+	Rule of thumb: 1 service = 1 business capability.
+	Keep services independent 
+	Each service owns its own database or data storage.
+	Keep services small and focused.
+## Microservices in ASP.NET Core Web API
+
+Each microservice will be implemented as a separate ASP.NET Core Web API project.
+Services communicate via HTTP (RESTful APIs) and own their databases.
+Advanced topics like RabbitMQ or Kafka can be added later for asynchronous communication.
+
+## Project Idea
+This project is a microservices-based application built with ASP.NET Core Web API.
+It consists of two main microservices: **Student Service** and **Payment Service*
+
+
+
+### Student Service
+ - Handles student accounts and authentication
+  - Register new students
+  - Login / logout
+- Stores student information in its own database
+- Emits events for important actions (e.g., student registration) for other services
+
+### Payment Service
+-handles all payment-related operations
+  - Make a payment
+  - View payment history
+- Stores payment data in its own database
+- Listens to events from other services (e.g., StudentRegistered) and can emit events (e.g., PaymentMade)
+
+### Communication
+- Services communicate via **REST HTTP APIs**
+- Event-driven communication will be implemented using **Kafka** for asynchronous messaging
+
+### Goals
+- Learn microservices architecture in ASP.NET Core
+- Understand service boundaries and data ownership
+- Implement communication between services via APIs and Kafka
+- Practice database management using **Entity Framework Core**
+
+## you might be confused about kafka  ?
+Kafka is used as an event streaming platform for asynchronous communication
+between microservices. Services can publish events (producers) and listen
+to events (consumers) without directly calling each other, allowing for
+decoupled and scalable architecture.
+	thing about it as event listeners and event broadcasters in js but more robust
+
+## why use it ? why not just http calls ?
+### Decoupling
+	Services don’t need to know about each other directly.
+	They just listen for events they care about.
+### Reliability / persistence
+	Events are stored durably in Kafka.
+	If a service is down, it can catch up later.
+	won’t lose messages, unlike normal HTTP calls
+### Scalability
+	Services can scale independently.
+### Asynchronous processing
+	Some operations take time:
+		Sending emails
+		Generating reports
+	Kafka allows these tasks to run in the background, so the main service is fast and responsive (dive later)
+## Kafka and RabbitMQ
+Technology	Type									Main Use
+Kafka		Distributed event streaming platform	Event-driven architecture, data pipelines, high-throughput messaging
+RabbitMQ	Message broker (queue system)			Task queues, asynchronous processing, reliable delivery of discrete messages
+
+## Student Service
+
+### Responsibilities:
+- Register, login, logout
+- Manage student information
+- Produce `StudentRegistered` events via Kafka
+
+### Database Table: Students
+- Id, Name, Email, PasswordHash, CreatedAt
+
+### API Endpoints:
+- POST /api/students/register
+- POST /api/students/login
+- POST /api/students/logout
+- GET /api/students/{id}
+- PUT /api/students/{id}
+
+### Kafka Events:
+- StudentRegistered (produced)
+
+## Payment Service
+
+### Responsibilities:
+- Make payments and view payment history
+- Consume `StudentRegistered` events to initialize student accounts
+- Produce `PaymentMade` events via Kafka
+
+### Database Table: Payments
+- Id, StudentId, Amount, Status, CreatedAt
+
+### API Endpoints:
+- POST /api/payments
+- GET /api/payments/{studentId}
+- GET /api/payments/{id}
+
+### Kafka Events:
+- Consumes: StudentRegistered
+- Produces: PaymentMade
+
+
+## Solution Structure
+
+The solution `StudentPaymentMicroservices` contains two ASP.NET Core Web API projects:
+
+1. StudentService
+   - Handles student registration, login, logout
+   - Produces `StudentRegistered` Kafka events
+
+2. PaymentService
+   - Handles payments and payment history
+   - Consumes `StudentRegistered` events
+   - Produces `PaymentMade` Kafka events
+
+Folder structure:
+- Controllers: API endpoints
+- Models: EF Core entity classes
+- Data: DbContext and database migrations
+- Services: optional business logic
