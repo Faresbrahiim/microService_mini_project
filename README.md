@@ -194,6 +194,7 @@ Folder structure:
 - Services: optional business logic
 
 ##  Workflow: Student + Payment microservices
+```
 Client
   │
   │ POST /register
@@ -213,6 +214,7 @@ PaymentService
   │
   │ Kafka: PaymentMade
   ▼
+  ```
 Other services (optional)
 
 # Steps to build the project ... 
