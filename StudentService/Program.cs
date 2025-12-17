@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using StudentService.Data;
-using StudentService.Services;
+using StudentService.Infrastructure;
 using StudentService.Interfaces;
+using StudentService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,8 @@ builder.Services.AddScoped<IStudentService, StudentServices>();
 // DI for addDbContext ...
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
 builder.Services.AddControllers();
 

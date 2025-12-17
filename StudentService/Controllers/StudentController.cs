@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using StudentService.Events;
 using StudentService.Interfaces;
 using StudentService.Models;
 
@@ -10,27 +11,38 @@ namespace StudentService.Controllers
     public class StudentController : ControllerBase
     {
         private readonly IStudentService _studentService;
+        private readonly IEventPublisher _eventPublisher;
 
-        public StudentController(IStudentService studentService)
+        public StudentController(
+            IStudentService studentService,
+            IEventPublisher eventPublisher)
         {
             _studentService = studentService;
+            _eventPublisher = eventPublisher;
         }
 
         // POST: api/student/register
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] Student student)
+        public async Task<IActionResult> Register([FromBody] RegisterStudentRequest request)
         {
-            try
+            var student = await _studentService.RegisterAsync(request);
+
+            if (student == null)
+                return BadRequest("Student already exists");
+
+            var studentEvent = new StudentRegisteredEvent
             {
-                Console.WriteLine($"Received registration request ");
-                var createdStudent = await _studentService.RegisterStudentAsync(student);
-                return Ok(createdStudent);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+                Id = student.Id,
+                FullName = student.Name,
+                Email = student.Email,
+                CreatedAt = student.CreatedAt
+            };
+
+            await _eventPublisher.PublishStudentRegisteredAsync(studentEvent);
+
+            return Ok(student);
         }
+
 
         // GET: api/student/{email}
         [HttpGet("{email}")]

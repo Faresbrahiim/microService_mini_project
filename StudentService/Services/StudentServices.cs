@@ -13,16 +13,22 @@ namespace StudentService.Services
             _studentRepository = studentRepository;
         }
 
-        public async Task<Student> RegisterStudentAsync(Student student)
+        public async Task<Student> RegisterAsync(RegisterStudentRequest request)
         {
-            var existingStudent = await _studentRepository.GetStudentByEmailAsync(student.Email);
-            if (existingStudent != null)
+            var existing = await _studentRepository.GetStudentByEmailAsync(request.Email);
+            if (existing != null) return null!; // or throw exception
+
+            var student = new Student
             {
-                throw new Exception("Email already registered");
-            }
-            student.CreatedAt = DateTime.UtcNow;
+                Name = request.Name,
+                Email = request.Email,
+                PasswordHash = request.Password,
+                CreatedAt = DateTime.UtcNow
+            };
+
             return await _studentRepository.CreateStudentAsync(student);
         }
+
 
         public Task<Student?> GetStudentByEmailAsync(string email)
         {
