@@ -1,4 +1,4 @@
-﻿namespace StudentService.Models
+﻿namespace StudentService.Models.Requests
 {
     public class LoginRequest
     {

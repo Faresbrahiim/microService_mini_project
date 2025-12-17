@@ -6,7 +6,7 @@ using StudentService.Models;
 public class StudentRepository : IStudentRepository
 {
     private readonly AppDbContext _context;
-
+    // DbContext is injected via constructor
     public StudentRepository(AppDbContext context)
     {
         _context = context; // DI injects DbContext here
@@ -14,6 +14,7 @@ public class StudentRepository : IStudentRepository
 
     public async Task<Student> CreateStudentAsync(Student student)
     {
+        // add student to the DbSet and save changes to the database
         _context.Students.Add(student);
         await _context.SaveChangesAsync();
         return student;
