@@ -51,7 +51,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         ClockSkew = TimeSpan.Zero
     };
 });
-
+// for docker
+builder.WebHost.UseUrls("http://*:5000");
 var app = builder.Build();
 
 // -------------------- PIPELINE --------------------
