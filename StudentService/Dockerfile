@@ -14,6 +14,7 @@ COPY . ./
 # Build the project
 RUN dotnet publish -c Release -o out
 
+
 # ===== Runtime stage =====
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 
