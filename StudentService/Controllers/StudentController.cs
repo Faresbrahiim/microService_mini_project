@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity.Data;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using StudentService.Events;
 using StudentService.Interfaces;
-using StudentService.Models;
 
 namespace StudentService.Controllers
 {
@@ -12,22 +12,25 @@ namespace StudentService.Controllers
     {
         private readonly IStudentService _studentService;
         private readonly IEventPublisher _eventPublisher;
+        private readonly ITokenService _tokenService;
 
         public StudentController(
             // inject the student service and event publisher to avoid tight coupling (not using concrete implementations directly)
             // IStudentService handles business logic related to students (e.g., registration, login)  , it does not interact with data storage directly
             IStudentService studentService,
-            IEventPublisher eventPublisher)
+            IEventPublisher eventPublisher,
+            ITokenService tokenService)
         {
             _studentService = studentService;
             _eventPublisher = eventPublisher;
+            _tokenService = tokenService;
         }
 
         // POST: api/student/register
         [HttpPost("register")]
         // deserialization is made automatic by specifying [FromBody]
         // the request body will be deserialized into RegisterStudentRequest object by the framework
-        // the request before deserialization stored in request variable
+        // the request before deserialization stored  only in memory 
         public async Task<IActionResult> Register([FromBody] RegisterStudentRequest request)
         {
             // call the student service to register a new student also add it to the database (service will call repository to store)
@@ -52,6 +55,7 @@ namespace StudentService.Controllers
         }
 
 
+        [Authorize]
         // GET: api/student/{email}
         [HttpGet("{email}")]
         public async Task<IActionResult> GetByEmail(string email)
@@ -63,14 +67,24 @@ namespace StudentService.Controllers
 
         // POST: api/student/login
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] Models.LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var student = await _studentService.LoginAsync(request.Email, request.Password);
+
             if (student == null)
                 return Unauthorized("Invalid email or password");
 
-            return Ok(student);
+            var token = _tokenService.GenerateToken(student);
+
+            return Ok(new
+            {
+                token,
+                student.Id,
+                student.Name,
+                student.Email
+            });
         }
+
         // POST: api/student/logout
         [HttpPost("logout")]
         public IActionResult Logout()

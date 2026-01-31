@@ -1,34 +1,61 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using StudentService.Data;
 using StudentService.Infrastructure;
 using StudentService.Interfaces;
 using StudentService.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// -------------------- SERVICES --------------------
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// Register repository
-builder.Services.AddScoped<IStudentRepository, StudentRepository>();
-
-// Register service
-builder.Services.AddScoped<IStudentService, StudentServices>();
-// DI for addDbContext ...
+// DB
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+// Repository
+builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 
-builder.Services.AddControllers();
+// Service
+builder.Services.AddScoped<IStudentService, StudentServices>();
 
+// JWT token generator
+builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
+// Fake Kafka (dev)
+builder.Services.AddSingleton<IEventPublisher, FakeEventPublisher>();
+
+//  JWT AUTH CONFIG (THIS WAS MISSING)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+.AddJwtBearer(options =>
+{
+    var jwtSettings = builder.Configuration.GetSection("Jwt");
+
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(jwtSettings["Key"]!)
+        ),
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// -------------------- PIPELINE --------------------
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -36,6 +63,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+//  ORDER MATTERS
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
